@@ -9,3 +9,11 @@ About the assumptions, I assumed the user has a stable connection, so I didn't b
 It took me about 20 hours in total. Most of the time was spent on state management in React and debugging the communication between the frontend and the MongoDB backend.
 
 Bonus Points: AI Survey
+
+
+https://github.com/AnqiXu1/anqi-xu-project3.git
+
+https://anqi-xu-project3-backend.onrender.com
+
+https://anqi-xu-project3-frontend.onrender.com
+

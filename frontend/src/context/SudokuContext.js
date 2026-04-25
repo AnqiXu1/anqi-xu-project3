@@ -5,12 +5,12 @@ const SudokuContext = createContext();
 const createEmptyGrid = (size) => Array.from({ length: size }, () => Array(size).fill(0));
 
 const isValid = (board, row, col, num, size) => {
-    // 行和列检查
+
     for (let i = 0; i < size; i++) {
         if (board[row][i] === num || board[i][col] === num) return false;
     }
     
-    // 6x6 是 2x3 的宫格，9x9 是 3x3 的宫格
+
     const boxRows = size === 6 ? 2 : 3;
     const boxCols = 3; 
     
@@ -29,7 +29,7 @@ const fillBoard = (board, size) => {
     for (let row = 0; row < size; row++) {
         for (let col = 0; col < size; col++) {
             if (board[row][col] === 0) {
-                // 随机化数字序列以保证题目多样性
+
                 const nums = [...Array(size).keys()].map(i => i + 1).sort(() => Math.random() - 0.5);
                 for (let num of nums) {
                     if (isValid(board, row, col, num, size)) {
@@ -76,15 +76,14 @@ export const SudokuProvider = ({ children }) => {
         const formattedMode = mode.charAt(0).toUpperCase() + mode.slice(1);
         const size = formattedMode === 'Easy' ? 6 : 9;
         
-        // 1. 生成完整的正确答案
+
         let fullSolution = createEmptyGrid(size);
         fillBoard(fullSolution, size);
         
-        // 【调试用】在控制台打印正确答案，你可以按 F12 查看
+
         console.log("Sudoku Solution (Cheat Sheet):", fullSolution);
 
-        // 2. 增加预留数字的数量，确保题目有唯一解的可能性更高
-        // Easy 从 18 提高到 22，Hard 从 35 提高到 40
+
         const cellsToKeep = formattedMode === 'Easy' ? 22 : 40;
         
         let puzzle = fullSolution.map(row => [...row]);
