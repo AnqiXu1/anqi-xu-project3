@@ -13,7 +13,6 @@ const GamePage = ({ difficulty }) => {
     
     const [isSaving, setIsSaving] = useState(false);
 
-    // 校验逻辑：判断当前单元格是否违反数独规则
     const isInvalid = useCallback((row, col, value) => {
         if (!grid || grid.length === 0 || !grid[row] || value === 0) return false;
         const size = grid.length;
@@ -39,18 +38,17 @@ const GamePage = ({ difficulty }) => {
         return false;
     }, [grid]);
 
-    // 处理胜利：增加 gameState 判定防止重复触发
     const handleVictory = useCallback(async () => {
         if (isSaving || gameState !== 'playing') return; 
         
         setIsSaving(true);
-        setGameState('won'); // 1. 立即切换状态，锁定逻辑
+        setGameState('won');
         
         const token = localStorage.getItem('token');
         const formattedDiff = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
 
         try {
-            await axios.post('http://localhost:8000/api/games/save', {
+            await axios.post('https://anqi-xu-project3-backend.onrender.com/api/games/save', {
                 size: grid.length,
                 difficulty: formattedDiff,
                 initialBoard: initialGrid,
@@ -61,7 +59,6 @@ const GamePage = ({ difficulty }) => {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            // 2. 稍微延迟 alert，确保 React 渲染完成
             setTimeout(() => {
                 alert(`Winner! Record saved to database. Time: ${formatTime(seconds)}`);
             }, 100);
@@ -74,15 +71,14 @@ const GamePage = ({ difficulty }) => {
         }
     }, [grid, difficulty, initialGrid, seconds, formatTime, setGameState, isSaving, gameState]);
 
-    // 初始化游戏
+
     useEffect(() => {
         const formattedDiff = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
         startGame(formattedDiff);
     }, [difficulty, startGame]); 
 
-    // 实时监测：增加 gameState === 'playing' 锁
+
     useEffect(() => {
-        // 如果不在游戏中，直接返回
         if (!grid || grid.length === 0 || isSaving || gameState !== 'playing') return;
 
         const isFilled = grid.every(row => row.every(cell => cell !== 0));

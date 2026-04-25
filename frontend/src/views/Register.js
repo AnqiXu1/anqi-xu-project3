@@ -23,7 +23,7 @@ const Register = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:8000/api/users/register', {
+            const response = await axios.post('https://anqi-xu-project3-backend.onrender.com/api/users/register', {
                 username,
                 password
             });

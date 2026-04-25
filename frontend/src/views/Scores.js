@@ -9,18 +9,18 @@ const Scores = () => {
     const [viewMode, setViewMode] = useState('Easy');
     const [loading, setLoading] = useState(false);
 
-    // 新增：安全的日期转换函数
+  
     const formatDate = (dateValue) => {
         if (!dateValue) return 'N/A';
         const date = new Date(dateValue);
-        // 检查转换后是否为有效日期对象
+
         return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
     };
 
     const fetchLeaderboard = async (mode) => {
         setLoading(true);
         try {
-            const response = await axios.get(`http://localhost:8000/api/games/leaderboard/${mode}`);
+            const response = await axios.get(`https://anqi-xu-project3-backend.onrender.com/api/games/leaderboard/${mode}`);
             setLeaderboard(response.data);
         } catch (err) {
             console.error("Failed to fetch leaderboard:", err);
@@ -75,12 +75,12 @@ const Scores = () => {
                                     <tr key={record._id || index} style={{ borderBottom: '1px solid #eee', textAlign: 'center' }}>
                                         <td style={{ padding: '12px' }}>{index + 1}</td>
                                         <td style={{ padding: '12px' }}>
-                                            {/* 兼容不同的数据结构 */}
+                                            {/**/}
                                             {record.userId?.username || record.username || 'Unknown'}
                                         </td>
                                         <td style={{ padding: '12px', fontWeight: 'bold' }}>{formatTime(record.timer)}</td>
                                         <td style={{ padding: '12px', color: '#7f8c8d', fontSize: '0.9em' }}>
-                                            {/* 使用安全转换函数，同时检查多个可能的日期字段 */}
+                                            {/**/}
                                             {formatDate(record.createdAt || record.date || record.timestamp)}
                                         </td>
                                     </tr>
