@@ -20,8 +20,11 @@ function App() {
                     <Routes>
                         <Route path="/" element={<Home />} />
                         <Route path="/games" element={<Selection />} />
-                        <Route path="/games/easy" element={<GamePage difficulty="easy" />} />
-                        <Route path="/games/normal" element={<GamePage difficulty="normal" />} />
+
+                        <Route path="/games/easy" element={<GamePage difficulty="Easy" size={6} />} />
+
+                        <Route path="/games/hard" element={<GamePage difficulty="Hard" size={9} />} />
+                        
                         <Route path="/rules" element={<Rules />} />
                         <Route path="/scores" element={<Scores />} />
                         <Route path="/login" element={<Login />} />

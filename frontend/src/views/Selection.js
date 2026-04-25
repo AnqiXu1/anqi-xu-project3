@@ -15,7 +15,9 @@ const Selection = () => {
     return (
         <div className="container" style={{ textAlign: 'center' }}>
             <h1>Select Your Game Mode</h1>
-            <p style={{ color: '#666', marginBottom: '30px' }}>Choose a difficulty level to start your Sudoku challenge.</p>
+            <p style={{ color: '#666', marginBottom: '30px' }}>
+                Choose a difficulty level to start your Sudoku challenge.
+            </p>
             
             <div style={{ 
                 display: 'flex', 
@@ -35,17 +37,22 @@ const Selection = () => {
                 <button 
                     className="auth-submit" 
                     style={{ backgroundColor: '#e67e22', padding: '20px', fontSize: '1.2rem' }}
-                    onClick={() => handleSelect('normal')}
+                    onClick={() => handleSelect('hard')}
                 >
-                    Normal Mode (9 x 9)
+                    Hard Mode (9 x 9)
                 </button>
             </div>
 
-            <div style={{ marginTop: '40px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+            <div style={{ 
+                marginTop: '40px', 
+                padding: '20px', 
+                backgroundColor: '#f9f9f9', 
+                borderRadius: '8px' 
+            }}>
                 <h3>Quick Tips:</h3>
                 <ul style={{ textAlign: 'left', display: 'inline-block', color: '#555' }}>
-                    <li><strong>Easy:</strong> Great for beginners, smaller grid.</li>
-                    <li><strong>Normal:</strong> The classic 9x9 Sudoku experience.</li>
+                    <li><strong>Easy:</strong> Great for beginners, smaller 6x6 grid.</li>
+                    <li><strong>Hard:</strong> The classic 9x9 Sudoku challenge for experts.</li>
                 </ul>
             </div>
         </div>

@@ -1,21 +1,58 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import '../styles/common.css';
 import '../styles/auth.css';
 
 const Login = () => {
+
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+
+        try {
+            const response = await axios.post('http://localhost:8000/api/users/login', {
+                username,
+                password
+            });
+
+
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                localStorage.setItem('username', response.data.username);
+                
+
+                navigate('/games');
+            }
+        } catch (err) {
+
+            setError(err.response?.data?.message || 'Login failed. Please try again.');
+        }
+    };
+
     return (
         <div className="container auth-container">
             <div className="auth-box">
                 <h1>Login</h1>
                 <p>Please enter your credentials to continue.</p>
                 
-                <form className="auth-form" onSubmit={(e) => e.preventDefault()}>
+                {/**/}
+                {error && <div style={{ color: '#e74c3c', marginBottom: '10px', fontSize: '0.9em' }}>{error}</div>}
+                
+                <form className="auth-form" onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label>Username</label>
                         <input 
                             type="text" 
                             placeholder="Enter username" 
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
                             required 
                         />
                     </div>
@@ -25,6 +62,8 @@ const Login = () => {
                         <input 
                             type="password" 
                             placeholder="Enter password" 
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             required 
                         />
                     </div>

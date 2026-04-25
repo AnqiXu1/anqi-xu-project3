@@ -1,20 +1,57 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 
 const SudokuContext = createContext();
+
+const createEmptyGrid = (size) => Array.from({ length: size }, () => Array(size).fill(0));
+
+const isValid = (board, row, col, num, size) => {
+    // 行和列检查
+    for (let i = 0; i < size; i++) {
+        if (board[row][i] === num || board[i][col] === num) return false;
+    }
+    
+    // 6x6 是 2x3 的宫格，9x9 是 3x3 的宫格
+    const boxRows = size === 6 ? 2 : 3;
+    const boxCols = 3; 
+    
+    const startRow = Math.floor(row / boxRows) * boxRows;
+    const startCol = Math.floor(col / boxCols) * boxCols;
+
+    for (let i = 0; i < boxRows; i++) {
+        for (let j = 0; j < boxCols; j++) {
+            if (board[startRow + i][startCol + j] === num) return false;
+        }
+    }
+    return true;
+};
+
+const fillBoard = (board, size) => {
+    for (let row = 0; row < size; row++) {
+        for (let col = 0; col < size; col++) {
+            if (board[row][col] === 0) {
+                // 随机化数字序列以保证题目多样性
+                const nums = [...Array(size).keys()].map(i => i + 1).sort(() => Math.random() - 0.5);
+                for (let num of nums) {
+                    if (isValid(board, row, col, num, size)) {
+                        board[row][col] = num;
+                        if (fillBoard(board, size)) return true;
+                        board[row][col] = 0;
+                    }
+                }
+                return false;
+            }
+        }
+    }
+    return true;
+};
 
 export const SudokuProvider = ({ children }) => {
     const [grid, setGrid] = useState([]);
     const [initialGrid, setInitialGrid] = useState([]);
-    const [gameState, setGameState] = useState('welcome'); 
-    const [difficulty, setDifficulty] = useState('normal');
-    
+    const [gameState, setGameState] = useState('welcome');
+    const [difficulty, setDifficulty] = useState('Easy');
     const [seconds, setSeconds] = useState(0);
-
-    const [scores, setScores] = useState(() => {
-        const savedScores = localStorage.getItem('sudoku-scores');
-        return savedScores ? JSON.parse(savedScores) : [];
-    });
-
+    const [scores, setScores] = useState([]);
 
     useEffect(() => {
         let interval = null;
@@ -34,71 +71,26 @@ export const SudokuProvider = ({ children }) => {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const saveScore = (mode, timeInSeconds) => {
-        const newScore = {
-            id: Date.now(),
-            user: "Anqi Xu",
-            difficulty: mode,
-            time: timeInSeconds,
-            date: new Date().toLocaleDateString()
-        };
-
-        const updatedScores = [...scores, newScore]
-            .sort((a, b) => a.time - b.time)
-            .slice(0, 10);
-
-        setScores(updatedScores);
-        localStorage.setItem('sudoku-scores', JSON.stringify(updatedScores));
-    };
-
-    const createEmptyGrid = (size) => Array.from({ length: size }, () => Array(size).fill(0));
-
-    const isValid = (board, row, col, num, size) => {
-        for (let i = 0; i < size; i++) {
-            if (board[row][i] === num || board[i][col] === num) return false;
-        }
-        const boxRows = size === 6 ? 2 : 3;
-        const boxCols = 3;
-        const startRow = Math.floor(row / boxRows) * boxRows;
-        const startCol = Math.floor(col / boxCols) * boxCols;
-
-        for (let i = 0; i < boxRows; i++) {
-            for (let j = 0; j < boxCols; j++) {
-                if (board[startRow + i][startCol + j] === num) return false;
-            }
-        }
-        return true;
-    };
-
-    const fillBoard = (board, size) => {
-        for (let row = 0; row < size; row++) {
-            for (let col = 0; col < size; col++) {
-                if (board[row][col] === 0) {
-                    const nums = [...Array(size).keys()].map(i => i + 1).sort(() => Math.random() - 0.5);
-                    for (let num of nums) {
-                        if (isValid(board, row, col, num, size)) {
-                            board[row][col] = num;
-                            if (fillBoard(board, size)) return true;
-                            board[row][col] = 0;
-                        }
-                    }
-                    return false;
-                }
-            }
-        }
-        return true;
-    };
-
-    const startGame = (mode) => {
+    const startGame = useCallback((mode) => {
         setSeconds(0);
-        const size = mode === 'easy' ? 6 : 9;
-        let newBoard = createEmptyGrid(size);
-        fillBoard(newBoard, size);
+        const formattedMode = mode.charAt(0).toUpperCase() + mode.slice(1);
+        const size = formattedMode === 'Easy' ? 6 : 9;
+        
+        // 1. 生成完整的正确答案
+        let fullSolution = createEmptyGrid(size);
+        fillBoard(fullSolution, size);
+        
+        // 【调试用】在控制台打印正确答案，你可以按 F12 查看
+        console.log("Sudoku Solution (Cheat Sheet):", fullSolution);
 
-        const cellsToKeep = mode === 'easy' ? 18 : 28;
-        let puzzle = newBoard.map(row => [...row]);
+        // 2. 增加预留数字的数量，确保题目有唯一解的可能性更高
+        // Easy 从 18 提高到 22，Hard 从 35 提高到 40
+        const cellsToKeep = formattedMode === 'Easy' ? 22 : 40;
+        
+        let puzzle = fullSolution.map(row => [...row]);
         let removed = 0;
         const totalCells = size * size;
+
         while (removed < (totalCells - cellsToKeep)) {
             const r = Math.floor(Math.random() * size);
             const c = Math.floor(Math.random() * size);
@@ -110,13 +102,15 @@ export const SudokuProvider = ({ children }) => {
 
         setGrid(puzzle);
         setInitialGrid(puzzle.map(row => [...row]));
-        setDifficulty(mode);
+        setDifficulty(formattedMode);
         setGameState('playing');
-    };
+    }, []);
 
-    const resetGame = () => {
+    const resetGame = useCallback(() => {
         setGrid(initialGrid.map(row => [...row]));
-    };
+        setSeconds(0);
+        setGameState('playing');
+    }, [initialGrid]);
 
     return (
         <SudokuContext.Provider value={{
@@ -124,7 +118,7 @@ export const SudokuProvider = ({ children }) => {
             initialGrid,
             gameState, setGameState,
             difficulty, startGame, resetGame,
-            seconds, formatTime, scores, saveScore
+            seconds, setSeconds, formatTime, scores, setScores
         }}>
             {children}
         </SudokuContext.Provider>

@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSudoku } from '../context/SudokuContext';
+import axios from 'axios';
 import '../styles/common.css';
 import '../styles/game-easy.css';
 import '../styles/game-hard.css';
@@ -7,16 +8,15 @@ import '../styles/game-hard.css';
 const GamePage = ({ difficulty }) => {
     const { 
         grid, setGrid, initialGrid, startGame, resetGame, 
-        seconds, formatTime, saveScore, setGameState 
+        seconds, formatTime, gameState, setGameState 
     } = useSudoku();
+    
+    const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        startGame(difficulty);
-    }, [difficulty]);
-
-    const isInvalid = (row, col, value) => {
+    // 校验逻辑：判断当前单元格是否违反数独规则
+    const isInvalid = useCallback((row, col, value) => {
         if (!grid || grid.length === 0 || !grid[row] || value === 0) return false;
-        const size = difficulty === 'easy' ? 6 : 9;
+        const size = grid.length;
 
         for (let i = 0; i < size; i++) {
             if (i !== col && grid[row][i] === value) return true;
@@ -37,29 +37,69 @@ const GamePage = ({ difficulty }) => {
             }
         }
         return false;
-    };
+    }, [grid]);
 
-    // Victory
+    // 处理胜利：增加 gameState 判定防止重复触发
+    const handleVictory = useCallback(async () => {
+        if (isSaving || gameState !== 'playing') return; 
+        
+        setIsSaving(true);
+        setGameState('won'); // 1. 立即切换状态，锁定逻辑
+        
+        const token = localStorage.getItem('token');
+        const formattedDiff = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+
+        try {
+            await axios.post('http://localhost:8000/api/games/save', {
+                size: grid.length,
+                difficulty: formattedDiff,
+                initialBoard: initialGrid,
+                currentBoard: grid,
+                timer: seconds,
+                isCompleted: true
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            // 2. 稍微延迟 alert，确保 React 渲染完成
+            setTimeout(() => {
+                alert(`Winner! Record saved to database. Time: ${formatTime(seconds)}`);
+            }, 100);
+            
+        } catch (err) {
+            console.error("Save failed:", err);
+            alert("Victory! (But failed to save record: " + (err.response?.data?.message || "Server Error") + ")");
+        } finally {
+            setIsSaving(false);
+        }
+    }, [grid, difficulty, initialGrid, seconds, formatTime, setGameState, isSaving, gameState]);
+
+    // 初始化游戏
     useEffect(() => {
-        if (!grid || grid.length === 0) return;
+        const formattedDiff = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+        startGame(formattedDiff);
+    }, [difficulty, startGame]); 
+
+    // 实时监测：增加 gameState === 'playing' 锁
+    useEffect(() => {
+        // 如果不在游戏中，直接返回
+        if (!grid || grid.length === 0 || isSaving || gameState !== 'playing') return;
 
         const isFilled = grid.every(row => row.every(cell => cell !== 0));
-        const hasError = grid.some((row, rIdx) => 
-            row.some((cell, cIdx) => isInvalid(rIdx, cIdx, cell))
-        );
+        if (isFilled) {
+            const hasError = grid.some((row, rIdx) => 
+                row.some((cell, cIdx) => isInvalid(rIdx, cIdx, cell))
+            );
 
-        if (isFilled && !hasError) {
-            setGameState('won');
-            saveScore(difficulty, seconds);
-            setTimeout(() => {
-                alert(`Winner! You finished in ${formatTime(seconds)}! Record saved.`);
-            }, 100);
+            if (!hasError) {
+                handleVictory();
+            }
         }
-    }, [grid]);
+    }, [grid, isInvalid, isSaving, handleVictory, gameState]);
 
     const handleInputChange = (row, col, e) => {
         const val = e.target.value;
-        const max = difficulty === 'easy' ? 6 : 9;
+        const max = grid.length;
         
         if (val === '' || (Number(val) >= 1 && Number(val) <= max)) {
             const newGrid = grid.map(r => [...r]);
@@ -68,16 +108,16 @@ const GamePage = ({ difficulty }) => {
         }
     };
 
-    const gridClass = difficulty === 'easy' ? 'sudoku-grid-6x6' : 'sudoku-grid-9x9';
+    const gridClass = grid.length === 6 ? 'sudoku-grid-6x6' : 'sudoku-grid-9x9';
 
     if (!grid || grid.length === 0) {
-        return <div className="container">Loading Puzzle...</div>;
+        return <div className="container">Generating Puzzle...</div>;
     }
 
     return (
         <div className="container">
             <h1 style={{ textAlign: 'center' }}>
-                {difficulty === 'easy' ? 'Easy Mode: 6 x 6' : 'Normal Mode: 9 x 9'}
+                {grid.length === 6 ? 'Easy Mode: 6 x 6' : 'Hard Mode: 9 x 9'}
             </h1>
             
             <div className="timer" style={{ color: '#e74c3c', fontWeight: 'bold', textAlign: 'center', marginBottom: '10px' }}>
@@ -106,8 +146,19 @@ const GamePage = ({ difficulty }) => {
             </div>
 
             <div className="game-controls" style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                <button className="auth-submit" onClick={() => startGame(difficulty)}>New Game</button>
-                <button className="auth-submit" style={{ backgroundColor: '#95a5a6' }} onClick={resetGame}>Reset</button>
+                <button 
+                    className="auth-submit" 
+                    onClick={() => startGame(difficulty.charAt(0).toUpperCase() + difficulty.slice(1))}
+                >
+                    New Game
+                </button>
+                <button 
+                    className="auth-submit" 
+                    style={{ backgroundColor: '#95a5a6' }} 
+                    onClick={resetGame}
+                >
+                    Reset
+                </button>
             </div>
         </div>
     );
